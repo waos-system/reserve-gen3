@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}時間帯選択 - {{ store.store_name }}{% endblock %}
+{% block extra_styles %}
+.back-bar {
+  background: var(--primary);
+  color: white;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.back-btn {
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+.date-header {
+  text-align: center;
+  padding: 24px 16px 16px;
+}
+.date-header .date-num { font-size: 40px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--primary); }
+.date-header .date-label { font-size: 16px; color: var(--text-muted); font-weight: 500; }
+.slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.slot-btn {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  display: block;
+  transition: all 0.15s;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border: 2px solid transparent;
+}
+.slot-btn:active { transform: scale(0.96); border-color: var(--accent); }
+.slot-btn .slot-time { font-size: 16px; font-weight: 700; color: var(--primary); }
+.slot-btn .slot-remaining { font-size: 13px; margin-top: 6px; }
+.slot-btn .remaining-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.slot-btn .remaining-fill { height: 100%; background: #16a34a; border-radius: 2px; }
+.slot-btn.almost-full .remaining-fill { background: var(--warning); }
+.slot-btn.full { opacity: 0.5; pointer-events: none; background: var(--bg); }
+{% endblock %}
+{% block body %}
+<div class="back-bar">
+  <a href="/book/{{ store.id }}" class="back-btn">← 戻る</a>
+  <span style="font-weight:600;">{{ store.store_name }}</span>
+</div>
+
+<div class="date-header">
+  <div class="date-num">{{ slot_date.day }}</div>
+  <div class="date-label">{{ slot_date.strftime('%Y年%m月%d日') }}（{{ ['月','火','水','木','金','土','日'][slot_date.weekday()] }}）</div>
+</div>
+
+<div class="main-content" style="padding-top:0;">
+  <p class="section-title">時間帯を選択</p>
+
+  {% if slots %}
+  <div class="slot-grid">
+    {% for slot in slots %}
+    {% set remaining = slot.remaining_capacity %}
+    {% set fill_pct = ((remaining / slot.max_capacity) * 100)|int if slot.max_capacity > 0 else 0 %}
+    {% set is_full = remaining <= 0 %}
+    {% set is_almost = remaining <= (slot.max_capacity * 0.2)|int and remaining > 0 %}
+
+    {% if is_full %}
+    <div class="slot-btn full">
+      <div class="slot-time">{{ slot.slot_label }}</div>
+      <div class="slot-remaining" style="color:var(--accent);">満員</div>
+      <div class="remaining-bar">
+        <div class="remaining-fill" style="width:100%;background:var(--accent);"></div>
+      </div>
+    </div>
+    {% else %}
+    <a href="/book/{{ store.id }}/form/{{ slot.id }}"
+      class="slot-btn {% if is_almost %}almost-full{% endif %}">
+      <div class="slot-time">{{ slot.slot_label }}</div>
+      <div class="slot-remaining" style="color:{% if is_almost %}var(--warning){% else %}#16a34a{% endif %};">
+        残り {{ remaining }}名
+      </div>
+      <div class="remaining-bar">
+        <div class="remaining-fill" style="width:{{ fill_pct }}%;{% if is_almost %}background:var(--warning);{% endif %}"></div>
+      </div>
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:40px;color:var(--text-muted);">
+    <div style="font-size:36px;margin-bottom:12px;">😔</div>
+    <div>この日の予約枠はありません</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

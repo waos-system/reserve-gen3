@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}予約設定 - {{ store.store_name }}{% endblock %}
+{% block extra_styles %}
+.type-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.type-option { display: none; }
+.type-label {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  gap: 4px;
+}
+.type-label .icon { font-size: 22px; }
+.type-option:checked + .type-label {
+  border-color: var(--accent);
+  background: #fff5f7;
+  color: var(--accent);
+}
+.section-box {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-top: 12px;
+}
+.section-box-title { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; }
+.time-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.time-sep { text-align: center; color: var(--text-muted); font-weight: 700; }
+.conditional { display: none; }
+.conditional.show { display: block; }
+{% endblock %}
+{% block body %}
+<div class="page-header">
+  <div class="store-name">{{ store.store_name }}</div>
+  <h1>予約設定</h1>
+</div>
+
+<div class="main-content">
+  {% if success %}
+  <div class="alert alert-success">✅ 設定を保存しました</div>
+  {% endif %}
+
+  <form method="post" action="/store/setup">
+    <div class="card">
+      <p class="section-title">基本情報</p>
+      <div class="form-group">
+        <label class="form-label">店舗名</label>
+        <input type="text" name="store_name" class="form-input"
+          value="{{ store.store_name }}" required placeholder="店舗名を入力">
+      </div>
+      <div class="form-group">
+        <label class="form-label">LINE チャンネルトークン（任意）</label>
+        <input type="text" name="line_channel_token" class="form-input"
+          value="{{ store.line_channel_token or '' }}" placeholder="LINE Messaging API トークン">
+      </div>
+      <div class="form-group">
+        <label class="form-label">店舗LINE ユーザーID（通知受信用）</label>
+        <input type="text" name="line_user_id" class="form-input"
+          value="{{ store.line_user_id or '' }}" placeholder="Uxxxxxxxxxxxxxxxxx">
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">営業時間</p>
+      <div class="time-row">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">開始</label>
+          <input type="time" name="business_start" class="form-input"
+            value="{{ config.business_start if config else '09:00' }}" required>
+        </div>
+        <span class="time-sep" style="margin-top:20px;">〜</span>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">終了</label>
+          <input type="time" name="business_end" class="form-input"
+            value="{{ config.business_end if config else '18:00' }}" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">予約タイプ</p>
+      <div class="type-selector">
+        <div>
+          <input type="radio" name="slot_type" id="type-daily" value="DAILY" class="type-option"
+            {% if not config or config.slot_type == 'DAILY' %}checked{% endif %}
+            onchange="showType('daily')">
+          <label for="type-daily" class="type-label">
+            <span class="icon">📆</span>1日単位
+          </label>
+        </div>
+        <div>
+          <input type="radio" name="slot_type" id="type-hourly" value="HOURLY" class="type-option"
+            {% if config and config.slot_type == 'HOURLY' %}checked{% endif %}
+            onchange="showType('hourly')">
+          <label for="type-hourly" class="type-label">
+            <span class="icon">⏰</span>時間単位
+          </label>
+        </div>
+        <div>
+          <input type="radio" name="slot_type" id="type-halfday" value="HALFDAY" class="type-option"
+            {% if config and config.slot_type == 'HALFDAY' %}checked{% endif %}
+            onchange="showType('halfday')">
+          <label for="type-halfday" class="type-label">
+            <span class="icon">🌓</span>午前/午後
+          </label>
+        </div>
+      </div>
+
+      <!-- 1日単位 -->
+      <div id="cond-daily" class="section-box conditional {% if not config or config.slot_type == 'DAILY' %}show{% endif %}">
+        <p class="section-box-title">1日あたりの設定</p>
+        <div class="form-group">
+          <label class="form-label">1日の最大予約人数</label>
+          <input type="number" name="capacity_per_slot" class="form-input"
+            value="{{ config.capacity_per_slot if config else 10 }}" min="1" max="9999">
+        </div>
+      </div>
+
+      <!-- 時間単位 -->
+      <div id="cond-hourly" class="section-box conditional {% if config and config.slot_type == 'HOURLY' %}show{% endif %}">
+        <p class="section-box-title">時間単位の設定</p>
+        <div class="form-group">
+          <label class="form-label">スロット間隔（分）</label>
+          <select name="slot_interval_minutes" class="form-select">
+            {% for m in [30, 60, 90, 120] %}
+            <option value="{{ m }}" {% if config and config.slot_interval_minutes == m %}selected{% endif %}>{{ m }}分</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">1スロットあたりの人数</label>
+          <input type="number" name="capacity_per_slot" class="form-input"
+            value="{{ config.capacity_per_slot if config else 2 }}" min="1" max="9999"
+            id="hourly-capacity">
+        </div>
+      </div>
+
+      <!-- 午前/午後 -->
+      <div id="cond-halfday" class="section-box conditional {% if config and config.slot_type == 'HALFDAY' %}show{% endif %}">
+        <p class="section-box-title">午前/午後の設定</p>
+        <div class="form-group">
+          <label class="form-label">午前終了時間</label>
+          <input type="time" name="am_end_time" class="form-input"
+            value="{{ config.am_end_time if config else '12:00' }}">
+        </div>
+        <div class="time-row">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">午前の定員</label>
+            <input type="number" name="am_capacity" class="form-input"
+              value="{{ config.am_capacity if config else 10 }}" min="1">
+          </div>
+          <span class="time-sep" style="margin-top:20px;">/</span>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">午後の定員</label>
+            <input type="number" name="pm_capacity" class="form-input"
+              value="{{ config.pm_capacity if config else 10 }}" min="1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">ボックス設定（オプション）</p>
+      <p class="text-muted" style="margin-bottom:12px;">席・担当者など複数の枠がある場合に設定</p>
+      <div class="form-group">
+        <label class="form-label">ボックスの名称</label>
+        <input type="text" name="box_label" class="form-input"
+          value="{{ config.box_label if config else '席' }}" placeholder="席 / 担当者 / テーブル">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ボックス数</label>
+        <input type="number" name="box_count" class="form-input"
+          value="{{ config.box_count if config else 1 }}" min="1" max="100">
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-title">カレンダー設定</p>
+      <div class="form-group">
+        <label class="form-label">カレンダー作成期間（翌月から何ヶ月後まで）</label>
+        <select name="calendar_months_ahead" class="form-select">
+          {% for m in [1, 2, 3, 4, 6] %}
+          <option value="{{ m }}" {% if config and config.calendar_months_ahead == m %}selected{% endif %}>{{ m }}ヶ月後の末日まで</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">祝日の扱い</label>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;" id="lbl-holiday-close">
+            <input type="radio" name="close_on_holidays" value="1"
+              {% if not config or config.close_on_holidays %}checked{% endif %}
+              onchange="document.getElementById('lbl-holiday-close').style.borderColor='var(--accent)';document.getElementById('lbl-holiday-open').style.borderColor='var(--border)'">
+            <div>
+              <div style="font-weight:700;">🔒 祝日は自動で休業</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">祝日のスロットは予約不可になります</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;" id="lbl-holiday-open">
+            <input type="radio" name="close_on_holidays" value="0"
+              {% if config and not config.close_on_holidays %}checked{% endif %}
+              onchange="document.getElementById('lbl-holiday-open').style.borderColor='var(--accent)';document.getElementById('lbl-holiday-close').style.borderColor='var(--border)'">
+            <div>
+              <div style="font-weight:700;">🟢 祝日でも予約可能</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">祝日も通常営業として扱います（コンビニ・飲食店等）</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">設定を保存する</button>
+  </form>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/store/dashboard">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    ホーム
+  </a>
+  <a href="/store/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    カレンダー
+  </a>
+  <a href="/store/reservations">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    予約一覧
+  </a>
+  <a href="/store/logout">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    ログアウト
+  </a>
+</nav>
+
+<script>
+function showType(type) {
+  ['daily','hourly','halfday'].forEach(t => {
+    document.getElementById('cond-' + t).classList.toggle('show', t === type);
+  });
+}
+// 初期化
+document.addEventListener('DOMContentLoaded', () => {
+  const checked = document.querySelector('input[name="slot_type"]:checked');
+  if (checked) showType(checked.value.toLowerCase());
+});
+</script>
+{% endblock %}
