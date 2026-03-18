@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}店舗ログイン{% endblock %}
+{% block extra_styles %}
+.login-wrap {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 24px 16px 40px;
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+}
+.login-logo { text-align: center; margin-bottom: 28px; color: white; }
+.login-logo .icon {
+  width: 60px; height: 60px;
+  background: rgba(233,69,96,0.2); border: 2px solid rgba(233,69,96,0.4);
+  border-radius: 18px; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px; font-size: 26px;
+}
+.login-logo h1 { font-size: 24px; font-weight: 700; }
+.login-logo p { font-size: 12px; opacity: 0.5; margin-top: 4px; }
+.login-card {
+  background: rgba(255,255,255,0.05); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+  padding: 24px 20px; max-width: 420px; width: 100%; margin: 0 auto;
+}
+.login-card .form-label { color: rgba(255,255,255,0.5); }
+.login-card .form-input {
+  background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;
+}
+.login-card .form-input::placeholder { color: rgba(255,255,255,0.3); }
+.login-card .form-input:focus { border-color: var(--accent); }
+.demo-section {
+  margin-top: 20px; max-width: 420px; width: 100%; margin-left: auto; margin-right: auto;
+}
+.demo-title {
+  color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  text-align: center; margin-bottom: 10px;
+}
+.demo-card {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; cursor: pointer;
+  transition: background 0.15s; -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; gap: 12px;
+}
+.demo-card:active { background: rgba(255,255,255,0.12); }
+.demo-card .demo-icon { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
+.demo-card .demo-name { color: white; font-weight: 600; font-size: 14px; }
+.demo-card .demo-cred { color: rgba(255,255,255,0.45); font-size: 11px; margin-top: 2px; font-family: 'DM Mono', monospace; }
+.demo-card .demo-badge {
+  margin-left: auto; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+  font-size: 10px; padding: 3px 8px; border-radius: 100px; flex-shrink: 0;
+}
+.demo-card.selected { background: rgba(233,69,96,0.2); border-color: rgba(233,69,96,0.5); }
+{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-logo">
+    <div class="icon">📅</div>
+    <h1>予約管理システム</h1>
+    <p>Store Management System</p>
+  </div>
+
+  <div class="login-card">
+    <p style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:16px;font-weight:500;">店舗アカウントにログイン</p>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/store/login" id="loginForm">
+      <div class="form-group">
+        <label class="form-label">電話番号</label>
+        <input type="tel" name="phone_number" id="inputPhone" class="form-input"
+          placeholder="090-0000-0001" required autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">パスワード</label>
+        <input type="password" name="password" id="inputPass" class="form-input"
+          placeholder="パスワードを入力" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+        ログイン →
+      </button>
+    </form>
+    <p style="text-align:center;margin-top:14px;font-size:13px;color:rgba(255,255,255,0.45);">
+      アカウントをお持ちでない方は
+      <a href="/store/register" style="color:rgba(255,255,255,0.8);text-decoration:underline;font-weight:600;">新規登録</a>
+    </p>
+  </div>
+
+  <!-- デモアカウント一覧 -->
+  <div class="demo-section">
+    <p class="demo-title">🎮 デモアカウント（タップで自動入力）</p>
+
+    <div class="demo-card" onclick="fillDemo('090-0000-0001','demo1234',this)">
+      <div class="demo-icon">✂️</div>
+      <div>
+        <div class="demo-name">サンプル美容院 BLOOM</div>
+        <div class="demo-cred">090-0000-0001 / demo1234</div>
+      </div>
+      <span class="demo-badge">1h×3担当</span>
+    </div>
+
+    <div class="demo-card" onclick="fillDemo('090-0000-0002','demo5678',this)">
+      <div class="demo-icon">🏥</div>
+      <div>
+        <div class="demo-name">さくら内科クリニック</div>
+        <div class="demo-cred">090-0000-0002 / demo5678</div>
+      </div>
+      <span class="demo-badge">午前/午後</span>
+    </div>
+
+    <div class="demo-card" onclick="fillDemo('090-0000-0003','demo9012',this)">
+      <div class="demo-icon">🍻</div>
+      <div>
+        <div class="demo-name">大衆居酒屋 串八番</div>
+        <div class="demo-cred">090-0000-0003 / demo9012</div>
+      </div>
+      <span class="demo-badge">2h×6組</span>
+    </div>
+
+    <div class="demo-card" onclick="fillDemo('090-0000-0004','demo3456',this)">
+      <div class="demo-icon">🍱</div>
+      <div>
+        <div class="demo-name">手作り弁当 まかないや</div>
+        <div class="demo-cred">090-0000-0004 / demo3456</div>
+      </div>
+      <span class="demo-badge">在庫予約</span>
+    </div>
+
+    <p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;margin-top:10px;">
+      ※ デモ環境です。実際のデータは使用しないでください
+    </p>
+  </div>
+</div>
+
+<script>
+function fillDemo(phone, pass, el) {
+  document.querySelectorAll('.demo-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('inputPhone').value = phone;
+  document.getElementById('inputPass').value = pass;
+  // 少し待ってからフォーム送信
+  setTimeout(() => document.getElementById('loginForm').submit(), 300);
+}
+</script>
+{% endblock %}

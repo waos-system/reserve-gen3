@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}エラー{% endblock %}
+{% block body %}
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;text-align:center;">
+  <div style="font-size:48px;margin-bottom:16px;">😔</div>
+  <h1 style="font-size:20px;font-weight:700;margin-bottom:8px;">{{ message }}</h1>
+  <p style="color:var(--text-muted);margin-bottom:24px;">お手数ですが最初からやり直してください</p>
+  <a href="/" class="btn btn-primary" style="max-width:200px;">トップに戻る</a>
+</div>
+{% endblock %}

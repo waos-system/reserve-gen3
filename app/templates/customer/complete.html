@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}予約完了 - {{ store.store_name }}{% endblock %}
+{% block extra_styles %}
+.complete-hero {
+  background: linear-gradient(135deg, #0f9b58 0%, #16a34a 100%);
+  color: white;
+  padding: 40px 16px 60px;
+  text-align: center;
+}
+.complete-hero .check-icon {
+  width: 72px; height: 72px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 16px;
+}
+.complete-hero h1 { font-size: 24px; font-weight: 700; }
+.complete-hero p { font-size: 14px; opacity: 0.8; margin-top: 6px; }
+.detail-card {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  margin-top: -24px;
+  padding: 28px 20px;
+  min-height: 70vh;
+}
+.res-number {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.res-number .label { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.res-number .number { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 700; color: var(--primary); margin-top: 4px; }
+.qr-section { text-align: center; margin: 20px 0; }
+.qr-section img { width: 180px; height: 180px; border-radius: 12px; }
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row .info-label { color: var(--text-muted); font-weight: 500; }
+.info-row .info-value { font-weight: 700; }
+.line-notice {
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 20px;
+  text-align: center;
+}
+{% endblock %}
+{% block body %}
+<div class="complete-hero">
+  <div class="check-icon">✅</div>
+  <h1>仮予約を受け付けました</h1>
+  <p>LINEで予約を確定してください</p>
+</div>
+
+<div class="detail-card">
+  <div class="res-number">
+    <div class="label">予約番号</div>
+    <div class="number">{{ reservation.reservation_number }}</div>
+  </div>
+
+  <div class="info-row">
+    <span class="info-label">店舗名</span>
+    <span class="info-value">{{ store.store_name }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">日時</span>
+    <span class="info-value">{{ slot.slot_date.strftime('%Y年%m月%d日') }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">時間帯</span>
+    <span class="info-value">{{ slot.slot_label }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">お名前</span>
+    <span class="info-value">{{ reservation.customer_name }} 様</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">人数</span>
+    <span class="info-value">{{ reservation.party_size }}名</span>
+  </div>
+
+  {% if reservation.qr_code_path %}
+  <div class="qr-section">
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">予約確認QRコード</p>
+    <img src="{{ reservation.qr_code_path }}" alt="QRコード">
+    <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">来店時にご提示ください</p>
+  </div>
+  {% endif %}
+
+  <div class="line-notice">
+    <div style="font-size:20px;margin-bottom:8px;">💬</div>
+    <p style="font-weight:700;margin-bottom:4px;">LINEで予約を確定</p>
+    <p style="font-size:12px;color:#276749;">
+      LINEにお送りした確認メッセージの「予約を確定する」ボタンをタップしてください
+    </p>
+    <div style="margin-top:12px;">
+      <a href="{{ confirm_url }}" class="btn btn-primary" style="background:#0f9b58;">
+        このページから確定する
+      </a>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;text-align:center;">
+    <a href="/book/{{ store.id }}" style="color:var(--text-muted);font-size:13px;">
+      トップに戻る
+    </a>
+  </div>
+</div>
+{% endblock %}
