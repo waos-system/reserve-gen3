@@ -1,4 +1,6 @@
 venv/
 __pycache__/
 reservation.db
+test_reservation.db
+.env.local
 

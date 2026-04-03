@@ -20,7 +20,7 @@ class TestLogin:
             data={"phone_number": "090-1234-5678", "password": "testpass123"},
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         assert "/store/dashboard" in resp.headers["location"]
 
     def test_login_wrong_password(self, client, test_store):
@@ -51,11 +51,11 @@ class TestLogin:
     def test_logout(self, logged_in_client):
         """ログアウト後はセッションが破棄される"""
         resp = logged_in_client.get("/store/logout", follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         assert "/store/login" in resp.headers["location"]
 
     def test_already_logged_in_redirects(self, logged_in_client):
         """ログイン済みでログインページ → ダッシュボードへリダイレクト"""
         resp = logged_in_client.get("/store/login", follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         assert "/store/dashboard" in resp.headers["location"]

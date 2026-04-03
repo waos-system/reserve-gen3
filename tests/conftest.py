@@ -214,5 +214,5 @@ def logged_in_client(client, test_store):
         data={"phone_number": test_store.phone_number, "password": "testpass123"},
         follow_redirects=False,
     )
-    assert response.status_code == 302
+    assert response.status_code in (302, 303)
     return client

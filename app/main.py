@@ -1,28 +1,27 @@
 """
-予約システム FastAPI メインアプリケーション
-spec.md 参照・更新ポイント: セクション1 技術スタック、セクション4 APIエンドポイント
+FastAPI application entrypoint.
 """
 import os
 from pathlib import Path
+
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
-from dotenv import load_dotenv
 
 from app.database import init_db
-from app.routers import auth, store, customer
+from app.env import load_app_env
+from app.routers import auth, customer, store
 
-load_dotenv()
+load_app_env()
 
 app = FastAPI(
-    title="予約システム",
-    description="店舗向け予約管理システム",
+    title="Reservation System",
+    description="Store reservation management system",
     version="1.0.0",
 )
 
-# セッションミドルウェア
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-please-change-in-production")
 app.add_middleware(
     SessionMiddleware,
@@ -32,19 +31,16 @@ app.add_middleware(
     same_site="lax",
 )
 
-# 静的ファイル
 static_dir = Path("app/static")
 static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# ルーター登録
 app.include_router(auth.router, prefix="/store", tags=["store-auth"])
 app.include_router(store.router, prefix="/store", tags=["store-management"])
-# 新規登録は /store/register で auth より後に登録（store.router に含まれる）
 app.include_router(customer.router, prefix="/book", tags=["customer-booking"])
 
-# 確認URLルーター（/confirm/{token}）
 from app.routers.customer import confirm_reservation
+
 app.add_api_route(
     "/confirm/{token}",
     confirm_reservation,
@@ -53,7 +49,6 @@ app.add_api_route(
     tags=["customer-booking"],
 )
 
-# Jinja2グローバル関数を登録（テンプレートで enumerate/min/max が使えるように）
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals.update({
     "enumerate": enumerate,
@@ -66,10 +61,9 @@ templates.env.globals.update({
 
 @app.on_event("startup")
 async def startup_event():
-    """起動時にDBを初期化"""
-    init_db()
-    print("✅ データベース初期化完了")
-    print(f"📋 spec.md を参照: {Path('spec.md').absolute()}")
+    """Initialize the database when enabled."""
+    if os.getenv("AUTO_INIT_DB", "true").lower() == "true":
+        init_db()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -84,4 +78,5 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

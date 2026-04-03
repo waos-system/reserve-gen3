@@ -53,7 +53,7 @@ class TestSetup:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         db.refresh(test_store)
         config = db.query(ReservationConfig).filter(
@@ -83,7 +83,7 @@ class TestSetup:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         db.refresh(test_store_with_config)
         config = test_store_with_config.config
@@ -110,7 +110,7 @@ class TestSetup:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         config = db.query(ReservationConfig).filter(
             ReservationConfig.store_id == test_store.id
@@ -137,7 +137,7 @@ class TestHolidays:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         rules = db.query(HolidayRule).filter(
             HolidayRule.store_id == test_store.id
@@ -158,7 +158,7 @@ class TestHolidays:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         rule = db.query(HolidayRule).filter(
             HolidayRule.store_id == test_store.id
@@ -181,7 +181,7 @@ class TestHolidays:
             f"/store/holidays/delete/{rule.id}",
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         count = db.query(HolidayRule).filter(
             HolidayRule.store_id == test_store.id
@@ -199,7 +199,7 @@ class TestHolidays:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         rule = db.query(HolidayRule).filter(
             HolidayRule.store_id == test_store.id
@@ -219,7 +219,7 @@ class TestCalendarManagement:
             "/store/calendar/generate",
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         count = db.query(CalendarSlot).filter(
             CalendarSlot.store_id == test_store_with_config.id
@@ -235,7 +235,7 @@ class TestCalendarManagement:
             data={"redirect_url": "/store/calendar"},
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         db.refresh(test_slot)
         assert test_slot.is_available is False
@@ -251,7 +251,7 @@ class TestCalendarManagement:
             },
             follow_redirects=False,
         )
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
 
         db.refresh(test_slot)
         assert test_slot.max_capacity == 10

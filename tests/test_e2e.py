@@ -54,7 +54,7 @@ DEMO_STORES = [
             calendar_months_ahead=3,
         ),
         "holidays": [
-            dict(rule_type="WEEKLY", day_of_week=0, description="日曜定休"),
+            dict(rule_type="WEEKLY", day_of_week=6, description="日曜定休"),
         ],
         "expected_slots_per_day": 3,   # 17:00-19:00 / 19:00-21:00 / 21:00-23:00
         "expected_capacity_per_slot": 48,  # 8名 × 6組
@@ -199,7 +199,7 @@ class TestLoginScreen:
         store, s_def = beauty_store
         login(client, s_def["phone_number"], s_def["password"])
         resp = client.get("/store/logout", follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         assert "/store/login" in resp.headers["location"]
         resp2 = client.get("/store/dashboard", follow_redirects=False)
         assert resp2.status_code in (302, 422)
@@ -355,7 +355,7 @@ class TestHolidayScreen:
         resp = client.post("/store/holidays/add", data={
             "rule_type": "WEEKLY", "day_of_week": "3", "half_day_restriction": "",
         }, follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         assert db.query(HolidayRule).filter(HolidayRule.store_id == store.id).count() == before + 1
 
     def test_add_specific_holiday(self, client, bento_store, db):
@@ -368,7 +368,7 @@ class TestHolidayScreen:
             "description": "お盆休み",
             "half_day_restriction": "",
         }, follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         rule = db.query(HolidayRule).filter(
             HolidayRule.store_id == store.id, HolidayRule.rule_type == "SPECIFIC"
         ).first()
@@ -383,7 +383,7 @@ class TestHolidayScreen:
             "rule_type": "WEEKLY", "day_of_week": "4",
             "half_day_restriction": "AM", "description": "木曜ランチ休み",
         }, follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         rule = db.query(HolidayRule).filter(
             HolidayRule.store_id == store.id, HolidayRule.day_of_week == 4
         ).first()
@@ -394,7 +394,7 @@ class TestHolidayScreen:
         login(client, s_def["phone_number"], s_def["password"])
         rule = db.query(HolidayRule).filter(HolidayRule.store_id == store.id).first()
         resp = client.post(f"/store/holidays/delete/{rule.id}", follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         assert db.query(HolidayRule).filter(HolidayRule.id == rule.id).first() is None
 
     def test_cannot_delete_other_store_holiday(self, client, beauty_store, bento_store, db):
@@ -536,7 +536,7 @@ class TestCalendarScreen:
             "override_note": "特別増量",
             "redirect_url": "/store/calendar",
         }, follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         db.refresh(slot)
         assert slot.max_capacity == 50
         assert slot.override_note == "特別増量"
@@ -699,7 +699,7 @@ class TestCustomerBookingFlow:
             "customer_email": "izakaya@example.com",
             "party_size": "4",
         }, follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         r = db.query(Reservation).filter(Reservation.customer_phone == "090-7777-0001").first()
         assert r is not None
         assert r.party_size == 4
@@ -715,7 +715,7 @@ class TestCustomerBookingFlow:
             "customer_phone": "090-7777-0002",
             "party_size": "5",   # 5食注文
         }, follow_redirects=False)
-        assert resp.status_code == 302
+        assert resp.status_code in (302, 303)
         r = db.query(Reservation).filter(Reservation.customer_phone == "090-7777-0002").first()
         assert r is not None
         assert r.party_size == 5

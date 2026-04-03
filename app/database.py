@@ -1,37 +1,59 @@
 """
-データベース設定・セッション管理
-spec.md セクション2参照
+Database configuration.
+
+Production targets Supabase Postgres. SQLite remains available for local tests.
 """
 import os
+from typing import Optional
+
 from sqlalchemy import create_engine, event
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-load_dotenv()
+from app.env import load_app_env
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./reservation.db")
+load_app_env()
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
-    echo=os.getenv("DEBUG", "false").lower() == "true",
-)
 
-# SQLite外部キー有効化
-if "sqlite" in DATABASE_URL:
+def _normalize_database_url(raw_url: Optional[str]) -> str:
+    if not raw_url:
+        return "sqlite:///./reservation.db"
+
+    url = raw_url.strip()
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://") :]
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://") :]
+    return url
+
+
+RAW_DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = _normalize_database_url(RAW_DATABASE_URL)
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
+
+engine_kwargs = {
+    "echo": DEBUG,
+    "pool_pre_ping": True,
+}
+if IS_SQLITE:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
+
+if IS_SQLITE:
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
 def get_db():
-    """FastAPI依存性注入用DBセッション取得"""
+    """FastAPI dependency for DB sessions."""
     db = SessionLocal()
     try:
         yield db
@@ -40,6 +62,7 @@ def get_db():
 
 
 def init_db():
-    """DBテーブル作成（初回起動時）"""
+    """Create all tables."""
     from app import models  # noqa: F401
+
     Base.metadata.create_all(bind=engine)
