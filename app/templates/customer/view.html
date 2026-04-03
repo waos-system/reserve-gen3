@@ -3,7 +3,7 @@
 {% block body %}
 <div style="background:var(--primary);color:white;padding:28px 16px;text-align:center;">
   <h1 style="font-size:20px;font-weight:700;">{{ store.store_name }}</h1>
-  <p style="opacity:0.6;font-size:13px;margin-top:4px;">予約詳細</p>
+  <p style="opacity:0.7;font-size:13px;margin-top:4px;">予約詳細</p>
 </div>
 
 <div class="main-content">
@@ -11,40 +11,43 @@
     <p style="font-size:11px;color:var(--text-muted);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">予約番号</p>
     <p style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--primary);">{{ reservation.reservation_number }}</p>
     <span class="tag tag-{{ reservation.status.lower() }}" style="margin-top:8px;display:inline-block;">
-      {% if reservation.status == 'PENDING' %}仮予約（確認待ち）{% elif reservation.status == 'CONFIRMED' %}予約確定{% else %}キャンセル{% endif %}
+      {% if reservation.status == 'PENDING' %}仮予約{% elif reservation.status == 'CONFIRMED' %}確定{% else %}キャンセル{% endif %}
     </span>
   </div>
 
   <div class="card">
-    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;">
       <span style="color:var(--text-muted);">日付</span>
-      <span style="font-weight:700;">{{ reservation.slot.slot_date.strftime('%Y年%m月%d日') }}</span>
+      <span style="font-weight:700;text-align:right;">{{ reservation.slot.slot_date.strftime('%Y年%m月%d日') }}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
-      <span style="color:var(--text-muted);">時間帯</span>
-      <span style="font-weight:700;">{{ reservation.slot.slot_label }}</span>
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;">
+      <span style="color:var(--text-muted);">時間</span>
+      <span style="font-weight:700;text-align:right;">{{ reservation.slot.slot_label }}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;">
       <span style="color:var(--text-muted);">お名前</span>
-      <span style="font-weight:700;">{{ reservation.customer_name }} 様</span>
+      <span style="font-weight:700;text-align:right;">{{ reservation.customer_name }}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 0;">
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;">
+      <span style="color:var(--text-muted);">電話番号</span>
+      <span style="font-weight:700;text-align:right;">{{ reservation.customer_phone }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;">
+      <span style="color:var(--text-muted);">メールアドレス</span>
+      <span style="font-weight:700;text-align:right;">{{ reservation.customer_email or '未登録' }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 0;gap:12px;">
       <span style="color:var(--text-muted);">人数</span>
-      <span style="font-weight:700;">{{ reservation.party_size }}名</span>
+      <span style="font-weight:700;text-align:right;">{{ reservation.party_size }}名</span>
     </div>
   </div>
-
-  {% if reservation.qr_code_path %}
-  <div class="card" style="text-align:center;">
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">来店時にご提示ください</p>
-    <img src="{{ reservation.qr_code_path }}" alt="QRコード" style="width:160px;height:160px;border-radius:8px;">
-  </div>
-  {% endif %}
 
   {% if reservation.status == 'PENDING' %}
-  <a href="/confirm/{{ reservation.confirmation_token }}" class="btn btn-primary">
-    予約を確定する
-  </a>
+  <div class="card" style="margin-top:16px;">
+    <p style="font-weight:700;margin-bottom:8px;">まだ予約は確定していません</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">試験運用中につき、以下のボタンから予約を確定してください。</p>
+    <a href="/confirm/{{ reservation.confirmation_token }}" class="btn btn-primary">予約を確定する</a>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

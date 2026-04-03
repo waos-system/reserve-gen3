@@ -4,116 +4,126 @@
 .store-hero {
   background: linear-gradient(135deg, var(--primary) 0%, #0f3460 100%);
   color: white;
-  padding: 28px 16px 40px;
+  padding: 20px 16px 24px;
   text-align: center;
 }
-.store-hero .store-icon {
-  width: 60px; height: 60px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 18px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px;
-  margin: 0 auto 12px;
-}
 .store-hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-.store-hero p { font-size: 13px; opacity: 0.6; }
-.cal-wrap { background: var(--surface); border-radius: 20px 20px 0 0; margin-top: -20px; padding: 20px 16px; min-height: 70vh; }
-.cal-nav-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.cal-nav-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 16px; }
-.cal-month-label { font-size: 17px; font-weight: 700; }
+.store-hero p { font-size: 13px; opacity: 0.78; }
+.cal-shell {
+  padding: 16px 12px 24px;
+  background: #f7f8fc;
+}
+.cal-wrap {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 16px 14px 18px;
+  max-width: 760px;
+  margin: 0 auto;
+  box-shadow: var(--shadow);
+}
+.cal-nav-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-nav-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  color: inherit;
+}
+.cal-month-label { font-size: 18px; font-weight: 800; }
 .weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 4px; }
-.weekday-row span { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 4px 0; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.weekday-row span { font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 3px 0; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .cal-cell {
   aspect-ratio: 1;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: default;
   position: relative;
+  text-decoration: none;
 }
-.cal-cell.available {
-  background: #f0fdf4;
-  color: #166534;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.cal-cell.available:active { transform: scale(0.92); }
+.cal-cell.available { background: #f0fdf4; color: #166534; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cal-cell.available:active { transform: scale(0.96); }
 .cal-cell.full { background: #fef2f2; color: #d1d5db; }
 .cal-cell.closed { background: transparent; color: #d1d5db; }
 .cal-cell.past { color: #d1d5db; }
 .cal-cell.empty { opacity: 0; }
 .cal-cell.today-cell { outline: 2px solid var(--accent); outline-offset: 1px; }
-.cal-cell .dot {
-  width: 5px; height: 5px;
-  background: #16a34a;
-  border-radius: 50%;
-  position: absolute;
-  bottom: 4px;
-}
-.legend { display: flex; gap: 16px; justify-content: center; margin-top: 16px; }
+.cal-cell .dot { width: 5px; height: 5px; background: #16a34a; border-radius: 50%; position: absolute; bottom: 5px; }
+.legend { display: flex; gap: 14px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); }
 .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+@media (min-width: 900px) {
+  .store-hero { padding: 16px 16px 18px; }
+  .store-hero h1 { font-size: 20px; }
+  .cal-shell { padding: 14px 16px 24px; }
+  .cal-wrap { max-width: 700px; padding: 14px 16px 16px; }
+  .cal-month-label { font-size: 17px; }
+  .weekday-row span { font-size: 10px; padding: 2px 0; }
+  .cal-grid { gap: 3px; }
+  .cal-cell { min-height: 56px; font-size: 13px; border-radius: 8px; }
+  .cal-cell .dot { width: 4px; height: 4px; bottom: 4px; }
+  .legend { margin-top: 10px; }
+}
 {% endblock %}
 {% block body %}
 <div class="store-hero">
-  <div class="store-icon">🏪</div>
   <h1>{{ store.store_name }}</h1>
-  <p>ご予約はこちらから</p>
+  <p>予約日を選択してください</p>
 </div>
 
-<div class="cal-wrap">
-  <div class="cal-nav-row">
-    <a href="/book/{{ store.id }}?year={{ prev_year }}&month={{ prev_month }}" class="cal-nav-btn">‹</a>
-    <span class="cal-month-label">{{ year }}年{{ month }}月</span>
-    <a href="/book/{{ store.id }}?year={{ next_year }}&month={{ next_month }}" class="cal-nav-btn">›</a>
-  </div>
-
-  <div class="weekday-row">
-    {% for d in ['月','火','水','木','金','土','日'] %}
-    <span {% if loop.index == 6 %}style="color:#3b82f6"{% elif loop.index == 7 %}style="color:#ef4444"{% endif %}>{{ d }}</span>
-    {% endfor %}
-  </div>
-
-  <div class="cal-grid">
-    {% for week in weeks %}
-    {% for cell in week %}
-    {% if cell.status == 'empty' %}
-    <div class="cal-cell empty"></div>
-    {% elif cell.status == 'past' %}
-    <div class="cal-cell past">{{ cell.day }}</div>
-    {% elif cell.status == 'available' %}
-    <a href="/book/{{ store.id }}/slots/{{ cell.date.isoformat() }}" class="cal-cell available {% if cell.date == today %}today-cell{% endif %}">
-      {{ cell.day }}
-      <span class="dot"></span>
-    </a>
-    {% elif cell.status == 'full' %}
-    <div class="cal-cell full">{{ cell.day }}</div>
-    {% else %}
-    <div class="cal-cell closed">{{ cell.day }}</div>
-    {% endif %}
-    {% endfor %}
-    {% endfor %}
-  </div>
-
-  <div class="legend">
-    <div class="legend-item">
-      <div class="legend-dot" style="background:#dcfce7;border:1px solid #16a34a;"></div>
-      予約可能
+<div class="cal-shell">
+  <div class="cal-wrap">
+    <div class="cal-nav-row">
+      <a href="/book/{{ store.id }}?year={{ prev_year }}&month={{ prev_month }}" class="cal-nav-btn">‹</a>
+      <span class="cal-month-label">{{ year }}年{{ month }}月</span>
+      <a href="/book/{{ store.id }}?year={{ next_year }}&month={{ next_month }}" class="cal-nav-btn">›</a>
     </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background:#fef2f2;border:1px solid #ef4444;"></div>
-      満員
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background:#f1f5f9;border:1px solid #cbd5e1;"></div>
-      休業
-    </div>
-  </div>
 
-  <div style="margin-top:24px;padding:16px;background:var(--bg);border-radius:12px;font-size:13px;color:var(--text-muted);text-align:center;">
-    日付をタップして予約枠を選択してください
+    <div class="weekday-row">
+      {% for d in ['日','月','火','水','木','金','土'] %}
+      <span {% if loop.index == 1 %}style="color:#ef4444"{% elif loop.index == 7 %}style="color:#3b82f6"{% endif %}>{{ d }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="cal-grid">
+      {% for week in weeks %}
+      {% for cell in week %}
+      {% if cell.status == 'empty' %}
+      <div class="cal-cell empty"></div>
+      {% elif cell.status == 'past' %}
+      <div class="cal-cell past">{{ cell.day }}</div>
+      {% elif cell.status == 'available' %}
+      <a href="/book/{{ store.id }}/slots/{{ cell.date.isoformat() }}" class="cal-cell available {% if cell.date == today %}today-cell{% endif %}">
+        {{ cell.day }}
+        <span class="dot"></span>
+      </a>
+      {% elif cell.status == 'full' %}
+      <div class="cal-cell full">{{ cell.day }}</div>
+      {% else %}
+      <div class="cal-cell closed">{{ cell.day }}</div>
+      {% endif %}
+      {% endfor %}
+      {% endfor %}
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:1px solid #16a34a;"></div>予約可能</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fef2f2;border:1px solid #ef4444;"></div>満席</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f1f5f9;border:1px solid #cbd5e1;"></div>受付不可日</div>
+    </div>
+
+    <div style="margin-top:18px;padding:14px;background:var(--bg);border-radius:12px;font-size:13px;color:var(--text-muted);text-align:center;">
+      日付を選択して予約時間を確認してください
+    </div>
   </div>
 </div>
 {% endblock %}

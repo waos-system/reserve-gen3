@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from calendar import monthrange
 
 from app.utils.calendar_utils import (
+    build_month_weeks,
     get_calendar_range,
     generate_time_slots_for_day,
     generate_calendar,
@@ -21,6 +22,10 @@ from tests.conftest import create_test_store, create_test_config
 
 
 class TestCalendarRange:
+    def test_build_month_weeks_starts_sunday(self):
+        weeks = build_month_weeks(2025, 6, sunday_first=True)
+        assert weeks[0][0] == 1
+
     def test_range_starts_next_month(self):
         """カレンダーは翌月1日から始まる"""
         today = date.today()
@@ -143,6 +148,33 @@ class TestTimeSlotGeneration:
         )
         slots = generate_time_slots_for_day(config)
         assert len(slots) == 4  # 9:00, 9:30, 10:00, 10:30
+
+    def test_10min_interval(self):
+        config = ReservationConfig(
+            store_id=999,
+            slot_type="HOURLY",
+            business_start="09:00",
+            business_end="09:30",
+            slot_interval_minutes=10,
+            capacity_per_slot=2,
+            box_count=1,
+        )
+        slots = generate_time_slots_for_day(config)
+        assert [slot["label"] for slot in slots] == ["09:00-09:10", "09:10-09:20", "09:20-09:30"]
+
+    def test_15min_interval(self):
+        config = ReservationConfig(
+            store_id=999,
+            slot_type="HOURLY",
+            business_start="09:00",
+            business_end="10:00",
+            slot_interval_minutes=15,
+            capacity_per_slot=2,
+            box_count=1,
+        )
+        slots = generate_time_slots_for_day(config)
+        assert len(slots) == 4
+        assert slots[0]["label"] == "09:00-09:15"
 
 
 class TestJapaneseHolidays:

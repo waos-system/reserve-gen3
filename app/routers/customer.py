@@ -14,6 +14,8 @@ from typing import Optional
 
 from app.database import get_db
 from app.models import Store, CalendarSlot, Reservation
+from app.utils.calendar_utils import build_month_weeks
+from app.utils.email_utils import send_reservation_access_email
 from app.utils.qr_utils import generate_reservation_qr
 from app.utils.line_api import (
     send_pending_reservation_notice,
@@ -257,6 +259,7 @@ async def booking_complete(
         "store": store,
         "slot": slot,
         "confirm_url": f"{BASE_URL}/confirm/{reservation.confirmation_token}",
+        "access_url": f"{BASE_URL}/book/view/{reservation.reservation_number}",
     })
 
 
@@ -273,11 +276,14 @@ async def view_reservation(
     if not reservation:
         raise HTTPException(status_code=404)
 
-    return templates.TemplateResponse("customer/view.html", {
+    template_name = "customer/confirmed.html" if reservation.status == "CONFIRMED" else "customer/view.html"
+    return templates.TemplateResponse(template_name, {
         "request": request,
         "reservation": reservation,
         "store": reservation.store,
         "slot": reservation.slot,
+        "already": reservation.status == "CONFIRMED",
+        "access_url": f"{BASE_URL}/book/view/{reservation.reservation_number}",
     })
 
 
@@ -305,6 +311,7 @@ async def confirm_reservation(
             "store": reservation.store,
             "slot": reservation.slot,
             "already": True,
+            "access_url": f"{BASE_URL}/book/view/{reservation.reservation_number}",
         })
 
     if reservation.status == "CANCELLED":
@@ -316,10 +323,16 @@ async def confirm_reservation(
     # 予約確定処理
     reservation.status = "CONFIRMED"
     reservation.confirmed_at = datetime.utcnow()
+    if not reservation.qr_code_path:
+        reservation.qr_code_path = generate_reservation_qr(
+            reservation.reservation_number,
+            BASE_URL,
+        )
     db.commit()
 
     store = reservation.store
     slot = reservation.slot
+    access_url = f"{BASE_URL}/book/view/{reservation.reservation_number}"
 
     # 確定通知（顧客）
     if store.line_channel_token and reservation.line_user_id:
@@ -331,6 +344,18 @@ async def confirm_reservation(
             slot_date=str(slot.slot_date),
             slot_label=slot.slot_label,
             store_name=store.store_name,
+            access_url=access_url,
+        )
+
+    if reservation.customer_email:
+        send_reservation_access_email(
+            to_email=reservation.customer_email,
+            store_name=store.store_name,
+            reservation_number=reservation.reservation_number,
+            customer_name=reservation.customer_name,
+            slot_date=str(slot.slot_date),
+            slot_label=slot.slot_label,
+            access_url=access_url,
         )
 
     # 店舗への通知
@@ -352,13 +377,13 @@ async def confirm_reservation(
         "store": store,
         "slot": slot,
         "already": False,
+        "access_url": access_url,
     })
 
 
 def _build_calendar_weeks(year, month, today, available_dates):
     """カレンダーの週構造を構築"""
-    from calendar import monthcalendar
-    weeks_raw = monthcalendar(year, month)
+    weeks_raw = build_month_weeks(year, month, sunday_first=True)
     weeks = []
     for week in weeks_raw:
         week_days = []

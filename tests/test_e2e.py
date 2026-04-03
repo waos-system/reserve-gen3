@@ -777,7 +777,8 @@ class TestCustomerBookingFlow:
             "party_size": "1",
         }, follow_redirects=True)
         assert "RES-" in resp.text
-        assert "data:image/png;base64" in resp.text
+        assert "data:image/png;base64" not in resp.text
+        assert "予約を確定する" in resp.text
 
     def test_confirm_token_flow(self, client, bento_store, db):
         """弁当店：確認トークンで予約確定"""

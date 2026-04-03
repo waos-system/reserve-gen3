@@ -1,33 +1,33 @@
 {% extends "base.html" %}
 {% block title %}予約編集 - {{ store.store_name }}{% endblock %}
 {% block extra_styles %}
-.status-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.status-opt { display: none; }
+.status-selector { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.status-opt { display:none; }
 .status-label {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 12px 8px; border: 2px solid var(--border); border-radius: var(--radius-sm);
-  font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; gap: 4px;
-  transition: all 0.15s;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:12px 8px; border:2px solid var(--border); border-radius:var(--radius-sm);
+  font-size:12px; font-weight:700; cursor:pointer; text-align:center; gap:4px;
+  transition:all 0.15s;
 }
-.status-opt:checked + .status-label { border-color: var(--accent); background: #fff5f7; color: var(--accent); }
-.info-box { background: var(--bg); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px; }
-.info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
-.info-row:last-child { border-bottom: none; }
-.info-row .label { color: var(--text-muted); }
-.info-row .value { font-weight: 600; }
+.status-opt:checked + .status-label { border-color:var(--accent); background:#fff5f7; color:var(--accent); }
+.info-box { background:var(--bg); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:16px; }
+.info-row { display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-bottom:1px solid var(--border); gap:12px; }
+.info-row:last-child { border-bottom:none; }
+.info-row .label { color:var(--text-muted); }
+.info-row .value { font-weight:600; text-align:right; }
+.bottom-actions { margin-top:16px; display:grid; gap:12px; }
 {% endblock %}
 {% block body %}
-<div style="background:var(--primary);color:white;padding:14px 16px;display:flex;align-items:center;gap:12px;">
-  <a href="/store/reservations" style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;font-size:14px;">← 一覧</a>
-  <span style="font-weight:600;">予約編集</span>
+<div class="page-header">
+  <div class="store-name">{{ store.store_name }}</div>
+  <h1>予約編集</h1>
 </div>
 
 <div class="main-content" style="padding-top:16px;">
   {% if success %}
-  <div class="alert alert-success">✅ 更新しました</div>
+  <div class="alert alert-success">更新しました</div>
   {% endif %}
 
-  <!-- 予約スロット情報（読み取り専用） -->
   <div class="info-box">
     <p class="section-title" style="margin-bottom:10px;">予約情報</p>
     <div class="info-row"><span class="label">予約番号</span><span class="value mono">{{ reservation.reservation_number }}</span></div>
@@ -37,23 +37,21 @@
   </div>
 
   <form method="post" action="/store/reservations/{{ reservation.id }}/update">
+    <input type="hidden" name="return_url" value="{{ return_url }}">
     <div class="card">
       <p class="section-title">ステータス</p>
       <div class="status-selector">
         <div>
-          <input type="radio" name="status" id="s-pending" value="PENDING" class="status-opt"
-            {% if reservation.status == 'PENDING' %}checked{% endif %}>
-          <label for="s-pending" class="status-label">🕐<span>仮予約</span></label>
+          <input type="radio" name="status" id="s-pending" value="PENDING" class="status-opt" {% if reservation.status == 'PENDING' %}checked{% endif %}>
+          <label for="s-pending" class="status-label">仮予約</label>
         </div>
         <div>
-          <input type="radio" name="status" id="s-confirmed" value="CONFIRMED" class="status-opt"
-            {% if reservation.status == 'CONFIRMED' %}checked{% endif %}>
-          <label for="s-confirmed" class="status-label">✅<span>確定</span></label>
+          <input type="radio" name="status" id="s-confirmed" value="CONFIRMED" class="status-opt" {% if reservation.status == 'CONFIRMED' %}checked{% endif %}>
+          <label for="s-confirmed" class="status-label">確定</label>
         </div>
         <div>
-          <input type="radio" name="status" id="s-cancelled" value="CANCELLED" class="status-opt"
-            {% if reservation.status == 'CANCELLED' %}checked{% endif %}>
-          <label for="s-cancelled" class="status-label">❌<span>キャンセル</span></label>
+          <input type="radio" name="status" id="s-cancelled" value="CANCELLED" class="status-opt" {% if reservation.status == 'CANCELLED' %}checked{% endif %}>
+          <label for="s-cancelled" class="status-label">キャンセル</label>
         </div>
       </div>
     </div>
@@ -61,43 +59,37 @@
     <div class="card">
       <p class="section-title">予約者情報</p>
       <div class="form-group">
-        <label class="form-label">お名前</label>
-        <input type="text" name="customer_name" class="form-input"
-          value="{{ reservation.customer_name }}" required>
+        <label class="form-label">名前</label>
+        <input type="text" name="customer_name" class="form-input" value="{{ reservation.customer_name }}" required>
       </div>
       <div class="form-group">
         <label class="form-label">電話番号</label>
-        <input type="tel" name="customer_phone" class="form-input"
-          value="{{ reservation.customer_phone }}" required>
+        <input type="tel" name="customer_phone" class="form-input" value="{{ reservation.customer_phone }}" required>
       </div>
       <div class="form-group">
         <label class="form-label">メールアドレス</label>
-        <input type="email" name="customer_email" class="form-input"
-          value="{{ reservation.customer_email or '' }}" placeholder="任意">
+        <input type="email" name="customer_email" class="form-input" value="{{ reservation.customer_email or '' }}" placeholder="任意">
       </div>
       <div class="form-group">
         <label class="form-label">人数</label>
-        <input type="number" name="party_size" class="form-input"
-          value="{{ reservation.party_size }}" min="1" max="99" required>
+        <input type="number" name="party_size" class="form-input" value="{{ reservation.party_size }}" min="1" max="99" required>
       </div>
       <div class="form-group">
         <label class="form-label">備考</label>
-        <textarea name="notes" class="form-input" rows="3"
-          placeholder="備考・メモ" style="resize:none;">{{ reservation.notes or '' }}</textarea>
+        <textarea name="notes" class="form-input" rows="3" placeholder="備考メモ" style="resize:none;">{{ reservation.notes or '' }}</textarea>
       </div>
     </div>
 
-    <button type="submit" class="btn btn-primary">変更を保存する</button>
+    <button type="submit" class="btn btn-primary">更新する</button>
   </form>
 
-  <!-- 削除ボタン -->
-  <div style="margin-top:20px;">
-    <form method="post" action="/store/reservations/{{ reservation.id }}/delete"
-      onsubmit="return confirm('この予約を完全に削除しますか？')">
-      <button type="submit" class="btn btn-outline" style="border-color:var(--accent);color:var(--accent);">
-        🗑️ この予約を削除する
-      </button>
+  <div class="bottom-actions">
+    <form method="post" action="/store/reservations/{{ reservation.id }}/delete" onsubmit="return confirm('この予約を削除しますか？')">
+      <input type="hidden" name="return_url" value="{{ return_url }}">
+      <button type="submit" class="btn btn-outline" style="border-color:var(--accent);color:var(--accent);">この予約を削除する</button>
     </form>
+
+    <a href="{{ return_url }}" class="btn btn-secondary" style="border-radius:10px;">前の画面に戻る</a>
   </div>
 </div>
 

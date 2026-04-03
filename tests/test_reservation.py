@@ -162,7 +162,7 @@ class TestReservationComplete:
         resp = client.get("/book/complete/RES-INVALID-9999")
         assert resp.status_code == 404
 
-    def test_complete_page_shows_qr(self, client, test_store_with_config, test_slot, db):
+    def test_complete_page_hides_qr(self, client, test_store_with_config, test_slot, db):
         """完了ページにQRコードが表示される"""
         reservation = create_test_reservation(
             db, test_store_with_config.id, test_slot.id,
@@ -171,7 +171,8 @@ class TestReservationComplete:
         reservation.qr_code_path = "data:image/png;base64,iVBORw0KGgo="
         db.commit()
         resp = client.get(f"/book/complete/{reservation.reservation_number}")
-        assert "data:image/png;base64" in resp.text
+        assert "data:image/png;base64" not in resp.text
+        assert "予約を確定する" in resp.text
 
 
 class TestConfirmReservation:

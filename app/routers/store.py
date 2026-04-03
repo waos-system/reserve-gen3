@@ -3,6 +3,7 @@
 spec.md セクション3.1 / セクション4 店舗管理API参照
 """
 from datetime import date, timedelta
+from urllib.parse import quote
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -12,7 +13,7 @@ from typing import Optional
 from app.database import get_db
 from app.models import Store, ReservationConfig, HolidayRule, CalendarSlot, Reservation
 from app.routers.auth import get_current_store
-from app.utils.calendar_utils import generate_calendar
+from app.utils.calendar_utils import build_month_weeks, generate_calendar
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -251,8 +252,7 @@ async def calendar_page(
         }
 
     # カレンダーの週構造生成（各セルに日付文字列を付与）
-    from calendar import monthcalendar
-    raw_weeks = monthcalendar(year, month)
+    raw_weeks = build_month_weeks(year, month, sunday_first=True)
     weeks = []
     for week in raw_weeks:
         row = []
@@ -360,6 +360,10 @@ async def reservations_list(
     db: Session = Depends(get_db),
     status: Optional[str] = None,
     target_date: Optional[str] = None,
+    view: Optional[str] = "calendar",
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    slot_id: Optional[int] = None,
 ):
     store = _require_auth(request, db)
 
@@ -377,12 +381,117 @@ async def reservations_list(
 
     reservations = query.order_by(Reservation.created_at.desc()).limit(100).all()
 
+    today = date.today()
+    parsed_target_date = None
+    if target_date:
+        try:
+            parsed_target_date = date.fromisoformat(target_date)
+        except ValueError:
+            parsed_target_date = None
+
+    if not year:
+        year = parsed_target_date.year if parsed_target_date else today.year
+    if not month:
+        month = parsed_target_date.month if parsed_target_date else today.month
+
+    from calendar import monthrange
+    _, last_day = monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, last_day)
+
+    monthly_slots = db.query(CalendarSlot).filter(
+        CalendarSlot.store_id == store.id,
+        CalendarSlot.slot_date >= month_start,
+        CalendarSlot.slot_date <= month_end,
+    ).order_by(CalendarSlot.slot_date, CalendarSlot.slot_start).all()
+
+    reservation_slots = {}
+    day_summary = {}
+    for slot in monthly_slots:
+        day_key = slot.slot_date.strftime("%Y-%m-%d")
+        reservation_slots.setdefault(day_key, []).append(slot)
+        summary = day_summary.setdefault(day_key, {
+            "slot_count": 0,
+            "reservation_count": 0,
+            "confirmed_count": 0,
+            "pending_count": 0,
+        })
+        summary["slot_count"] += 1
+        slot_reservations = [r for r in slot.reservations if not status or r.status == status]
+        summary["reservation_count"] += len(slot_reservations)
+        summary["confirmed_count"] += sum(1 for r in slot_reservations if r.status == "CONFIRMED")
+        summary["pending_count"] += sum(1 for r in slot_reservations if r.status == "PENDING")
+
+    weeks = []
+    for week in build_month_weeks(year, month, sunday_first=True):
+        row = []
+        for day_num in week:
+            if day_num == 0:
+                row.append({"day": 0, "date_str": None})
+            else:
+                row.append({"day": day_num, "date_str": f"{year:04d}-{month:02d}-{day_num:02d}"})
+        weeks.append(row)
+
+    selected_date = None
+    if parsed_target_date:
+        selected_date = parsed_target_date.strftime("%Y-%m-%d")
+    if not selected_date:
+        selected_date = next((key for key, summary in sorted(day_summary.items()) if summary["reservation_count"] > 0), None)
+
+    selected_slots = reservation_slots.get(selected_date, []) if selected_date else []
+    if status:
+        selected_slots = [
+            slot for slot in selected_slots
+            if any(res.status == status for res in slot.reservations)
+        ]
+
+    selected_slot_groups = []
+    for slot in selected_slots:
+        filtered_reservations = [
+            reservation for reservation in slot.reservations
+            if not status or reservation.status == status
+        ]
+        filtered_reservations.sort(key=lambda reservation: reservation.created_at)
+        selected_slot_groups.append({
+            "slot": slot,
+            "reservations": filtered_reservations,
+            "reservation_count": len(filtered_reservations),
+        })
+
+    selected_slot = None
+    if slot_id:
+        selected_slot = next((slot for slot in selected_slots if slot.id == slot_id), None)
+    if not selected_slot and selected_slots:
+        selected_slot = selected_slots[0]
+
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+
+    return_url = str(request.url.path) + (f"?{request.url.query}" if request.url.query else "")
+
     return templates.TemplateResponse("store/reservations.html", {
         "request": request,
         "store": store,
         "reservations": reservations,
         "filter_status": status,
         "filter_date": target_date,
+        "view_mode": view or "list",
+        "weeks": weeks,
+        "day_summary": day_summary,
+        "selected_date": selected_date,
+        "selected_slots": selected_slots,
+        "selected_slot_groups": selected_slot_groups,
+        "selected_slot": selected_slot,
+        "year": year,
+        "month": month,
+        "prev_year": prev_year,
+        "prev_month": prev_month,
+        "next_year": next_year,
+        "next_month": next_month,
+        "return_url": return_url,
+        "return_url_quoted": quote(return_url, safe=""),
     })
 
 
@@ -401,12 +510,15 @@ async def edit_reservation_page(
     ).first()
     if not reservation:
         raise HTTPException(status_code=404)
+    return_url = request.query_params.get("return_url") or request.headers.get("referer") or "/store/reservations?view=calendar"
     return templates.TemplateResponse("store/reservation_edit.html", {
         "request": request,
         "store": store,
         "reservation": reservation,
         "slot": reservation.slot,
         "success": request.query_params.get("success"),
+        "return_url": return_url,
+        "return_url_quoted": quote(return_url, safe=""),
     })
 
 
@@ -438,8 +550,9 @@ async def update_reservation(
             reservation.confirmed_at = datetime.utcnow()
     reservation.notes = form.get("notes") or None
     db.commit()
+    return_url = form.get("return_url") or "/store/reservations?view=calendar"
     return RedirectResponse(
-        f"/store/reservations/{reservation_id}/edit?success=1", status_code=303
+        f"/store/reservations/{reservation_id}/edit?success=1&return_url={quote(return_url, safe='')}", status_code=303
     )
 
 
@@ -452,10 +565,12 @@ async def delete_reservation(
         Reservation.id == reservation_id,
         Reservation.store_id == store.id,
     ).first()
+    form = await request.form()
+    return_url = form.get("return_url") or "/store/reservations?view=calendar"
     if reservation:
         db.delete(reservation)
         db.commit()
-    return RedirectResponse("/store/reservations", status_code=303)
+    return RedirectResponse(return_url, status_code=303)
 
 
 # ======================================================

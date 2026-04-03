@@ -6,7 +6,7 @@ Production targets Supabase Postgres. SQLite remains available for local tests.
 import os
 from typing import Optional
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.env import load_app_env
@@ -66,3 +66,26 @@ def init_db():
     from app import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _ensure_runtime_schema()
+
+
+def _ensure_runtime_schema():
+    """Apply small compatibility fixes when no migration tool is in use."""
+    inspector = inspect(engine)
+    if "reservations" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"]: column for column in inspector.get_columns("reservations")}
+    qr_column = columns.get("qr_code_path")
+    if not qr_column:
+        return
+
+    column_type = str(qr_column["type"]).lower()
+    if "char" not in column_type:
+        return
+
+    with engine.begin() as connection:
+        if engine.dialect.name == "postgresql":
+            connection.execute(
+                text("ALTER TABLE reservations ALTER COLUMN qr_code_path TYPE TEXT")
+            )

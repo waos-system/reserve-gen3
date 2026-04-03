@@ -127,7 +127,7 @@
         <div class="form-group">
           <label class="form-label">スロット間隔（分）</label>
           <select name="slot_interval_minutes" class="form-select">
-            {% for m in [30, 60, 90, 120] %}
+            {% for m in [10, 15, 30, 60, 90, 120] %}
             <option value="{{ m }}" {% if config and config.slot_interval_minutes == m %}selected{% endif %}>{{ m }}分</option>
             {% endfor %}
           </select>

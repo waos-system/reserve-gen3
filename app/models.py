@@ -132,7 +132,7 @@ class Reservation(Base):
     status = Column(String(20), nullable=False, default="PENDING")
     confirmation_token = Column(String(100), nullable=True, unique=True)
     line_user_id = Column(String(100), nullable=True)
-    qr_code_path = Column(String(255), nullable=True)
+    qr_code_path = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     confirmed_at = Column(DateTime, nullable=True)

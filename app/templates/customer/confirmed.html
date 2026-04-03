@@ -1,30 +1,126 @@
 {% extends "base.html" %}
 {% block title %}予約確定 - {{ store.store_name }}{% endblock %}
+{% block extra_styles %}
+.confirmed-hero {
+  background: linear-gradient(135deg, #0f9b58 0%, #16a34a 100%);
+  color: white;
+  padding: 36px 16px 56px;
+  text-align: center;
+}
+.confirmed-hero .icon {
+  width: 72px;
+  height: 72px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  margin: 0 auto 16px;
+}
+.confirmed-hero h1 { font-size: 24px; font-weight: 800; }
+.confirmed-hero p { opacity: 0.86; margin-top: 8px; font-size: 14px; }
+.detail-card {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  margin-top: -24px;
+  padding: 28px 20px 36px;
+  min-height: 70vh;
+}
+.res-number {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.res-number .label { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.res-number .number { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 700; color: var(--primary); margin-top: 4px; }
+.info-row {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+.info-row:last-child { border-bottom:none; }
+.info-label { color:var(--text-muted); font-weight:500; }
+.info-value { font-weight:700; text-align:right; }
+.qr-card, .access-card {
+  margin-top: 18px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.qr-card { text-align:center; }
+.qr-card img { width: 180px; height: 180px; border-radius: 12px; background:white; padding:8px; }
+.access-url {
+  display:block;
+  margin-top:10px;
+  word-break:break-all;
+  color:var(--primary);
+  font-size:13px;
+}
+{% endblock %}
 {% block body %}
-<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:linear-gradient(135deg,#0f9b58,#16a34a);color:white;text-align:center;">
-  <div style="font-size:64px;margin-bottom:16px;">🎉</div>
-  <h1 style="font-size:26px;font-weight:700;margin-bottom:8px;">
-    {% if already %}予約は確定済みです{% else %}予約が確定しました！{% endif %}
-  </h1>
-  <p style="opacity:0.8;margin-bottom:32px;">ご来店をお待ちしております</p>
+<div class="confirmed-hero">
+  <div class="icon">確</div>
+  <h1>{% if already %}予約は確定済みです{% else %}予約が確定しました{% endif %}</h1>
+  <p>この画面はあとで同じURLから確認できます</p>
+</div>
 
-  <div style="background:rgba(255,255,255,0.15);border-radius:16px;padding:20px;width:100%;max-width:360px;text-align:left;margin-bottom:24px;">
-    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.2);">
-      <span style="opacity:0.7;">予約番号</span>
-      <span style="font-family:'DM Mono',monospace;font-weight:700;">{{ reservation.reservation_number }}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.2);">
-      <span style="opacity:0.7;">日時</span>
-      <span style="font-weight:700;">{{ slot.slot_date.strftime('%Y年%m月%d日') }}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:10px 0;">
-      <span style="opacity:0.7;">時間帯</span>
-      <span style="font-weight:700;">{{ slot.slot_label }}</span>
-    </div>
+<div class="detail-card">
+  <div class="res-number">
+    <div class="label">予約番号</div>
+    <div class="number">{{ reservation.reservation_number }}</div>
   </div>
 
-  <a href="/book/{{ store.id }}" style="background:white;color:#166534;font-weight:700;padding:14px 32px;border-radius:100px;font-size:15px;">
-    トップに戻る
-  </a>
+  <div class="info-row">
+    <span class="info-label">店舗名</span>
+    <span class="info-value">{{ store.store_name }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">日付</span>
+    <span class="info-value">{{ slot.slot_date.strftime('%Y年%m月%d日') }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">時間</span>
+    <span class="info-value">{{ slot.slot_label }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">お名前</span>
+    <span class="info-value">{{ reservation.customer_name }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">電話番号</span>
+    <span class="info-value">{{ reservation.customer_phone }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">メールアドレス</span>
+    <span class="info-value">{{ reservation.customer_email or '未登録' }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">人数</span>
+    <span class="info-value">{{ reservation.party_size }}名</span>
+  </div>
+
+  {% if reservation.qr_code_path %}
+  <div class="qr-card">
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">予約確認用QRコード</p>
+    <img src="{{ reservation.qr_code_path }}" alt="QRコード">
+    <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">来店時や確認時にご利用ください。</p>
+  </div>
+  {% endif %}
+
+  <div class="access-card">
+    <p class="section-title" style="margin-bottom:8px;">あとで確認するURL</p>
+    <p style="font-size:12px;color:var(--text-muted);">このURLはメールアドレスとLINEにも送付しています。（試験運用につきメールとLINEは送付されません）</p>
+    <a href="{{ access_url }}" class="access-url">{{ access_url }}</a>
+  </div>
+
+  <div style="margin-top:20px;">
+    <a href="/book/{{ store.id }}" class="btn btn-secondary">トップに戻る</a>
+  </div>
 </div>
 {% endblock %}
